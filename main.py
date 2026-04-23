@@ -1,8 +1,9 @@
 from playwright.sync_api import sync_playwright
-import time
+import pyperclip
 
 # Đường dẫn trang web
 PAGE_URL = "https://aistudio.google.com/prompts/1bIRQQRXhifAbX8C15Ic8pLafkDIVOB1n"
+
 
 with sync_playwright() as p:
     # Khởi chạy trình duyệt với profile để giữ trạng thái đăng nhập
@@ -56,7 +57,9 @@ with sync_playwright() as p:
 
     except Exception as e:
         print(f"Xảy ra lỗi: {e}")
-
+    
+    print("Phản hồi từ AI:")
+    print(pyperclip.paste())
     # Giữ trình duyệt để quan sát
     print("Đóng trình duyệt sau 5 giây...")
     page.wait_for_timeout(5000)
