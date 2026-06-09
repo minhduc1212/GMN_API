@@ -1,0 +1,2 @@
+
+https://gemini.google.com/_/BardChatUi/data/batchexecute?rpcids=L5adhe&source-path=%2Fapp&bl=boq_assistant-bard-web-server_20260608.13_p0&f.sid=-6755743443987215659&hl=vi&_reqid=2784454&rt=c

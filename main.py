@@ -18,7 +18,6 @@ with sync_playwright() as p:
     print("Đang tải trang web...")
     page.goto(PAGE_URL)
     
-   
     print("Đang gửi yêu cầu...")
     prompt = "Explain this code snippet in detail:\n\n```python\ndef greet(name):\n    return f'Hello, {name}!'\n```"
     page.fill("textarea[placeholder='Start typing a prompt to see what our models can do']", prompt)
