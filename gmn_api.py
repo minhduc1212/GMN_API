@@ -3,7 +3,15 @@ import time
 import uuid
 import re
 import os
-import requests
+import hashlib
+
+# Try to use curl-cffi for browser TLS fingerprint impersonation to bypass Google 1076/1099 blocks
+try:
+    from curl_cffi import requests
+    HAS_CURL_CFFI = True
+except ImportError:
+    import requests
+    HAS_CURL_CFFI = False
 
 # Default backup version identifier if fetching fails
 DEFAULT_BL_VERSION = "boq_assistant-bard-web-server_20260609.21_p0"
@@ -39,6 +47,22 @@ def load_cookies() -> str:
         except Exception:
             pass
     return os.environ.get("GEMINI_COOKIE", "")
+
+def get_sapisid_from_cookies(cookies_str: str) -> str:
+    """Extract the SAPISID cookie value from the cookies string."""
+    if not cookies_str:
+        return ""
+    try:
+        pairs = dict(p.split("=", 1) for p in cookies_str.split("; ") if "=" in p)
+        return pairs.get("SAPISID", "")
+    except Exception:
+        return ""
+
+def make_sapisidhash(sapisid: str) -> str:
+    """Generate the SAPISIDHASH signature required by Google when cookies are present."""
+    ts = int(time.time())
+    h = hashlib.sha1(f"{ts} {sapisid} https://gemini.google.com".encode()).hexdigest()
+    return f"SAPISIDHASH {ts}_{h}"
 
 def load_session_data() -> dict:
     """Load cached session ID and XSRF token from session_cache.json."""
@@ -147,6 +171,9 @@ def ask_gemini_direct(prompt: str, model: str = "gemini-3.5-flash", think_level:
     }
     if cookies_str:
         headers["Cookie"] = cookies_str
+        sapisid = get_sapisid_from_cookies(cookies_str)
+        if sapisid:
+            headers["Authorization"] = make_sapisidhash(sapisid)
 
     # Load cached XSRF token initially
     current_xsrf_token = session["xsrf_token"]
@@ -158,13 +185,18 @@ def ask_gemini_direct(prompt: str, model: str = "gemini-3.5-flash", think_level:
         post_headers = headers.copy()
         if not use_cookies:
             post_headers.pop("Cookie", None)
+            post_headers.pop("Authorization", None)
             
         post_data = payload_data.copy()
         if use_cookies and current_xsrf_token:
             post_data["at"] = current_xsrf_token
             
         print(f"[*] Querying '{model}' (bl: {bl_ver}, auth: {use_cookies and bool(cookies_str)}, xsrf: {bool(current_xsrf_token)})...")
-        return requests.post(url, data=post_data, headers=post_headers, timeout=30)
+        
+        if HAS_CURL_CFFI:
+            return requests.post(url, data=post_data, headers=post_headers, timeout=30, impersonate="chrome")
+        else:
+            return requests.post(url, data=post_data, headers=post_headers, timeout=30)
 
     # 2. Fire initial request (using cached XSRF token if available)
     bl_version = get_latest_bl_version()
@@ -221,8 +253,11 @@ def ask_gemini_direct(prompt: str, model: str = "gemini-3.5-flash", think_level:
     return clean_text(last_text)
 
 if __name__ == "__main__":
-    prompt = "give me 10 movies scifi, "
-    response = ask_gemini_direct(prompt, model="gemini-3.5-flash")
+    if not HAS_CURL_CFFI:
+        print("[*] Tip: Run 'pip install curl-cffi' to bypass Google rate limit blocks (1076/1099) completely.")
+        
+    prompt = "give me 10 anime movies like Makeine: Too Many Losing Heroin" 
+    response = ask_gemini_direct(prompt, model="gemini-3.1-pro")
     try:
         print(response)
     except UnicodeEncodeError:

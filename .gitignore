@@ -1,2 +1,5 @@
 .venv
 ai_profile
+.env
+*.txt
+*.json
