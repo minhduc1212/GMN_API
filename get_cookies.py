@@ -1,5 +1,4 @@
 import os
-import time
 from playwright.sync_api import sync_playwright
 
 # Paths resolved relative to this script's directory
@@ -64,26 +63,21 @@ def main():
             print("[*] Opening Gemini app...")
             page.goto("https://gemini.google.com/app")
             
-            print("[*] Checking for login session (waiting up to 3 minutes)...")
-            cookies_saved = 0
+            print("[*] Sign in to Gemini in the browser window if needed.")
+            input("[*] Once signed in, press Enter in this console to save cookies and exit...\n")
             
-            # Poll for session cookies every 0.5 seconds
-            for _ in range(360):
-                time.sleep(0.5)
-                if not context.pages:
-                    break
-                try:
-                    cookies = context.cookies()
-                    if has_active_session(cookies):
-                        cookies_saved = save_cookies(cookies)
-                        break
-                except Exception:
-                    break
+            cookies_saved = 0
+            try:
+                cookies = context.cookies()
+                if has_active_session(cookies):
+                    cookies_saved = save_cookies(cookies)
+            except Exception as e:
+                print(f"[!] Error retrieving cookies: {e}")
             
             if cookies_saved > 0:
                 print(f"[+] Success! Saved {cookies_saved} session cookies to cookies.txt.")
             else:
-                print("[-] Failed: Browser closed or login timed out before finding session.")
+                print("[-] Failed: No active session found or cookies could not be saved.")
                 
             context.close()
         except Exception as e:

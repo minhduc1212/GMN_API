@@ -109,7 +109,7 @@ def ask_gemini_direct(prompt: str, model: str = "gemini-3.5-flash", think_level:
     return clean_text(last_text)
 
 if __name__ == "__main__":
-    prompt = "Explain quantum computing in one sentence."
+    prompt = "give me simple python code to read a file and print its content?"
     response = ask_gemini_direct(prompt, model="gemini-3.5-flash")
     try:
         print(response)
